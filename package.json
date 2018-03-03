@@ -1,0 +1,27 @@
+{
+  "name": "cashbetcoindev",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://tjade273@bitbucket.org/mgt-corp/cashbetcoindev.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "homepage": "https://bitbucket.org/mgt-corp/cashbetcoindev#readme",
+  "dependencies": {
+    "big-integer": "^1.6.26",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "truffle-hdwallet-provider": "0.0.3",
+    "zeppelin-solidity": "1.6.0"
+  }
+}
