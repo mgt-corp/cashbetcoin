@@ -15,7 +15,7 @@ contract MigrationSource {
                                                  uint256 o_lock_endTime);
 }
 
-contract CashBetCoin is MigrationSource, ERC20 {
+contract CashBetCoin2 is MigrationSource, ERC20 {
   using SafeMath for uint256;
 
   string public constant name = "CashBetCoin";
@@ -59,7 +59,7 @@ contract CashBetCoin is MigrationSource, ERC20 {
   event BringIn(address indexed owner, uint256 value);
   event Vacate(address indexed owner, uint256 value);
   
-  function CashBetCoin(uint _totalSupply) public {
+  function CashBetCoin2(uint _totalSupply) public {
     totalSupply_ = _totalSupply;
     owner = msg.sender;
     User storage user = users[owner];

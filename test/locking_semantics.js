@@ -82,6 +82,7 @@ contract('Locking Semantics', (accounts) => {
             rv = await deployed.transfer(user[3], utils.tokenAmtStr(amt),
                                          {from: user[0]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -111,6 +112,7 @@ contract('Locking Semantics', (accounts) => {
                                              utils.tokenAmtStr(amt),
                                              {from: user[1]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -177,6 +179,7 @@ contract('Locking Semantics', (accounts) => {
             rv = await deployed.transfer(user[3], utils.tokenAmtStr(amt),
                                          {from: user[0]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -191,6 +194,7 @@ contract('Locking Semantics', (accounts) => {
                                              utils.tokenAmtStr(amt),
                                              {from: user[1]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -278,6 +282,7 @@ contract('Locking Semantics', (accounts) => {
             rv = await deployed.transfer(user[3], utils.tokenAmtStr(amt),
                                          {from: user[0]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -292,9 +297,40 @@ contract('Locking Semantics', (accounts) => {
                                              utils.tokenAmtStr(amt),
                                              {from: user[1]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
     })
 
+    /* If you run this test ganache will be broken for further
+       testing.  Uncomment and try this test once in a while.
+
+    it('locks expire at the right time', async () => {
+        amt = 1000
+        delta = 30 * utils.daySecs
+        exp = utils.now() + delta
+
+        // User2 locks 1000 tokens.
+        rv = await deployed.increaseLock(utils.tokenAmtStr(amt),
+                                         exp,
+                                         {from: user[2]})
+
+        // Should have 1000 locked.
+        rv = await deployed.lockedValueOf(user[2])
+        expect(rv.c[0]).to.equal(utils.tokenAmtInt(amt))
+
+        rv = await utils.timeTravel(delta - 1)
+
+        // Should still have 1000 locked.
+        rv = await deployed.lockedValueOf(user[2])
+        expect(rv.c[0]).to.equal(utils.tokenAmtInt(amt))
+
+        rv = await utils.timeTravel(4)
+
+        // Now should have 0 locked.
+        rv = await deployed.lockedValueOf(user[2])
+        expect(rv.c[0]).to.equal(utils.tokenAmtInt(0))
+    })
+    */
 })

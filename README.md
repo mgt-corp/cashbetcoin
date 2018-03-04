@@ -11,7 +11,13 @@ CashBet Coin
 
 #### Testing
 
+Start Ganache:
+
+    ganache
+
+Run the unit tests:
+
     export CBCROOT=~/cashbet/cashbetcoindev
-    
+
     cd $CBCROOT
     truffle test

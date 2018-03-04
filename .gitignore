@@ -1,3 +1,5 @@
 /.env
+/doc
+/misc
 build
 node_modules

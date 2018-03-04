@@ -60,6 +60,7 @@ contract('Locking Limits', (accounts) => {
                                              exp,
                                              {from: user[0]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -74,6 +75,7 @@ contract('Locking Limits', (accounts) => {
                                              exp,
                                              {from: user[0]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -108,6 +110,7 @@ contract('Locking Limits', (accounts) => {
                                              exp,
                                              {from: user[0]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -128,6 +131,7 @@ contract('Locking Limits', (accounts) => {
                                              exp,
                                              {from: user[0]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -145,6 +149,7 @@ contract('Locking Limits', (accounts) => {
                                              exp,
                                              {from: user[0]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -242,6 +247,7 @@ contract('Locking Limits', (accounts) => {
                                              user[1],
                                              {from: empl})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -277,6 +283,7 @@ contract('Locking Limits', (accounts) => {
                                              user[1],
                                              {from: empl})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -298,6 +305,7 @@ contract('Locking Limits', (accounts) => {
                                              user[1],
                                              {from: empl})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -316,6 +324,7 @@ contract('Locking Limits', (accounts) => {
                                              user[1],
                                              {from: empl})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")

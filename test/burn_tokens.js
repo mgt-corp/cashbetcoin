@@ -57,6 +57,7 @@ contract('Burn Tokens', (accounts) => {
             rv = await deployed.burnTokens(utils.tokenAmtStr(amt),
                                            {from: user[3]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
@@ -100,6 +101,7 @@ contract('Burn Tokens', (accounts) => {
             rv = await deployed.burnTokens(utils.tokenAmtStr(amt),
                                            {from: user[1]})
         } catch (ex) {
+            expect(ex.name).to.equal('StatusError')
             return true
         }
         throw new Error("missing exception")
