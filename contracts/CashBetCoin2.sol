@@ -56,7 +56,7 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
 
   event Burn(address indexed owner, uint256 value);
 
-  event BringIn(address indexed owner, uint256 value);
+  event OptIn(address indexed owner, uint256 value);
   event Vacate(address indexed owner, uint256 value);
   
   function CashBetCoin2(uint _totalSupply) public {
@@ -215,7 +215,7 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
     
     totalSupply_ = totalSupply_.add(balance);
     
-    BringIn(msg.sender, balance);
+    OptIn(msg.sender, balance);
     return true;
   }
 
