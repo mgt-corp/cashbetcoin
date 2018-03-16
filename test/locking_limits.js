@@ -1,3 +1,5 @@
+// Copyright (c) 2018 CashBet Alderney Limited. All rights reserved.
+
 const expect = require('chai').expect
 const CBC = artifacts.require("CashBetCoin")
 const utils = require('./utils')
@@ -29,7 +31,7 @@ contract('Locking Limits', (accounts) => {
         owner = accounts[0]
         empl = accounts[1]
         user = accounts.slice(2)
-        rv = await deployed.setEmployee(empl, true)
+        rv = await deployed.setEmployee(empl, web3.fromAscii('CashBet', 32))
         expect(rv.receipt.status).to.equal('0x01')
 
         // 5000 -> user[0]
@@ -55,28 +57,18 @@ contract('Locking Limits', (accounts) => {
         amt = 5001
         exp = utils.now() + 30 * utils.daySecs
 
-        try {
-            rv = await deployed.increaseLock(utils.tokenAmtStr(amt),
-                                             exp,
-                                             {from: user[0]})
-        } catch (ex) {
-            return true
-        }
-        throw new Error("missing exception")
+        await utils.assertRevert(deployed.increaseLock(utils.tokenAmtStr(amt),
+                                         exp,
+                                         {from: user[0]}))
     })
 
     it('expiration in the past not allowed', async () => {
         amt = 1000
         exp = utils.now() - utils.daySecs
 
-        try {
-            rv = await deployed.increaseLock(utils.tokenAmtStr(amt),
-                                             exp,
-                                             {from: user[0]})
-        } catch (ex) {
-            return true
-        }
-        throw new Error("missing exception")
+        await utils.assertRevert(deployed.increaseLock(utils.tokenAmtStr(amt),
+                                         exp,
+                                         {from: user[0]}))
     })
 
     it('user can lock 1000 tokens for 30 days', async () => {
@@ -103,14 +95,9 @@ contract('Locking Limits', (accounts) => {
         amt -= 1
         exp += 30
 
-        try {
-            rv = await deployed.increaseLock(utils.tokenAmtStr(amt),
-                                             exp,
-                                             {from: user[0]})
-        } catch (ex) {
-            return true
-        }
-        throw new Error("missing exception")
+        await utils.assertRevert(deployed.increaseLock(utils.tokenAmtStr(amt),
+                                         exp,
+                                         {from: user[0]}))
     })
 
     it('exp time can\'t get earlier', async () => {
@@ -123,14 +110,9 @@ contract('Locking Limits', (accounts) => {
         amt += 1000
         exp -= 1
 
-        try {
-            rv = await deployed.increaseLock(utils.tokenAmtStr(amt),
-                                             exp,
-                                             {from: user[0]})
-        } catch (ex) {
-            return true
-        }
-        throw new Error("missing exception")
+        await utils.assertRevert(deployed.increaseLock(utils.tokenAmtStr(amt),
+                                         exp,
+                                         {from: user[0]}))
     })
 
     it('fails if called with same lock value and exp time', async () => {
@@ -140,14 +122,9 @@ contract('Locking Limits', (accounts) => {
         rv = await deployed.lockedEndTimeOf(user[0])
         exp = rv.c[0]
 
-        try {
-            rv = await deployed.increaseLock(utils.tokenAmtStr(amt),
-                                             exp,
-                                             {from: user[0]})
-        } catch (ex) {
-            return true
-        }
-        throw new Error("missing exception")
+        await utils.assertRevert(deployed.increaseLock(utils.tokenAmtStr(amt),
+                                         exp,
+                                         {from: user[0]}))
     })
 
     it('can increase value by a small amount', async () => {
@@ -236,15 +213,10 @@ contract('Locking Limits', (accounts) => {
     it('expired locks can\'t be decreased', async () => {
         amt = 0
         exp = utils.now()
-        try {
-            rv = await deployed.decreaseLock(utils.tokenAmtStr(amt),
-                                             exp,
-                                             user[1],
-                                             {from: empl})
-        } catch (ex) {
-            return true
-        }
-        throw new Error("missing exception")
+        await utils.assertRevert(deployed.decreaseLock(utils.tokenAmtStr(amt),
+                                         exp,
+                                         user[1],
+                                         {from: empl}))
     })
 
     it('user1 can lock 1000 tokens for 30 days', async () => {
@@ -271,15 +243,10 @@ contract('Locking Limits', (accounts) => {
         amt += 1
         exp -= 10 * utils.daySecs
 
-        try {
-            rv = await deployed.decreaseLock(utils.tokenAmtStr(amt),
-                                             exp,
-                                             user[1],
-                                             {from: empl})
-        } catch (ex) {
-            return true
-        }
-        throw new Error("missing exception")
+        await utils.assertRevert(deployed.decreaseLock(utils.tokenAmtStr(amt),
+                                         exp,
+                                         user[1],
+                                         {from: empl}))
     })
 
     it('exp time can\'t increase on decreaseLock', async () => {
@@ -292,15 +259,10 @@ contract('Locking Limits', (accounts) => {
         amt -= 1000
         exp += 1
 
-        try {
-            rv = await deployed.decreaseLock(utils.tokenAmtStr(amt),
-                                             exp,
-                                             user[1],
-                                             {from: empl})
-        } catch (ex) {
-            return true
-        }
-        throw new Error("missing exception")
+        await utils.assertRevert(deployed.decreaseLock(utils.tokenAmtStr(amt),
+                                         exp,
+                                         user[1],
+                                         {from: empl}))
     })
 
     it('something needs to decrease on decreaseLock', async () => {
@@ -310,15 +272,10 @@ contract('Locking Limits', (accounts) => {
         rv = await deployed.lockedEndTimeOf(user[1])
         exp = rv.c[0]
 
-        try {
-            rv = await deployed.decreaseLock(utils.tokenAmtStr(amt),
-                                             exp,
-                                             user[1],
-                                             {from: empl})
-        } catch (ex) {
-            return true
-        }
-        throw new Error("missing exception")
+        await utils.assertRevert(deployed.decreaseLock(utils.tokenAmtStr(amt),
+                                         exp,
+                                         user[1],
+                                         {from: empl}))
     })
 
     it('can reduce lock time by one second', async () => {

@@ -11,7 +11,23 @@ CashBet Coin
 
 #### Testing
 
+Start Ganache:
+
+    ganache
+
+Run the unit tests:
+
     export CBCROOT=~/cashbet/cashbetcoindev
-    
+
     cd $CBCROOT
     truffle test
+
+Minimize the ABI JSON w/ minjson
+
+    minjson
+
+TODO:
+
+Coalesce the multi-associate-player versions:
+* playerid.js
+* migrate.js

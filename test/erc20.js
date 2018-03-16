@@ -1,3 +1,5 @@
+// Copyright (c) 2018 CashBet Alderney Limited. All rights reserved.
+
 const expect = require('chai').expect
 const CashBetCoin = artifacts.require('CashBetCoin')
 const utils = require('./utils')
@@ -27,11 +29,6 @@ contract('ERC20 Functions', function(accounts) {
     cbc =  await CashBetCoin.deployed()
   })
 
-  it('should initialize the contract with the message sender as owner', async () => {
-    const owner = await cbc.owner.call()
-    assert.equal(onwer.valueOf(), accounts[0], 'Account does not have the correct owner after init')
-  })
-
   it('should have an original balance of 430e6 coins', async () => {
     owner = accounts[0]
     ownerBalance = (await cbc.balanceOf(owner)).toNumber()
@@ -56,12 +53,25 @@ contract('ERC20 Functions', function(accounts) {
   it('should fail because function does not exist in contract', async () => {
     try {
       await cbc.nonExistentFunction()
-    } catch (e) {
+    } catch (ex) {
+      expect(ex.name).to.equal('TypeError')
       return true
     }
     throw new Error("I should never see this!")
   })
+    
+  it('owner should own all the supply of tokens', async () => {
+    owner = accounts[0]
+    ownerBalance = (await cbc.balanceOf(owner)).toNumber()
+    assert.equal(ownerBalance, new BigNumber(TOTAL_SUPPLY), 'Owner does not own all the tokens')
+  })
 
+  it('second account should not own any tokens', async () => {
+    account_two = accounts[1]
+    balance_two = (await cbc.balanceOf(account_two)).toNumber()
+    assert.equal(balance_two, 0, 'Second account somehow has tokens')
+  })
+    
   it('should correctly transfer cbc tokens', async () => {
     account_one = accounts[0]
     account_two = accounts[1]
@@ -73,8 +83,14 @@ contract('ERC20 Functions', function(accounts) {
     account_one_starting_balance = balance1.toNumber()
     account_two_starting_balance = balance2.toNumber()
 
-    await cbc.transfer(account_two, amount, {from: account_one})
-
+    rv = await cbc.transfer(account_two, amount, {from: account_one})
+      
+    evt = rv.logs[0]
+    expect(evt.event).to.equal("Transfer")
+    expect(evt.args.from).to.equal(account_one)
+    expect(evt.args.to).to.equal(account_two)
+    expect(evt.args.value.c[0]).to.equal(10)
+      
     balance3 = await cbc.balanceOf.call(account_one)
     balance4 = await cbc.balanceOf.call(account_two)
 
@@ -83,6 +99,47 @@ contract('ERC20 Functions', function(accounts) {
 
     assert.equal(account_one_ending_balance, account_one_starting_balance - 10, "Amount wasn't correctly taken from the sender")
     assert.equal(account_two_ending_balance, account_two_starting_balance + 10, "Amount wasn't correctly sent to the reciever")
+  })
+
+
+  it('should not allow a non-owner to transfer ownership', async () => {
+    account_two = accounts[1]
+    await utils.assertRevert(cbc.setOwner(account_two, {from: account_two}))
+  })
+
+  it('should allow you to burn tokens', async () => {
+    account_two = accounts[1]
+    amount = 10
+
+    balance1 = await cbc.balanceOf.call(account_two)
+    account_two_starting_balance = balance1.toNumber()
+
+    await cbc.burnTokens(amount, {from: account_two})
+
+    balance2 = await cbc.balanceOf.call(account_two)
+
+    account_two_ending_balance = balance2.toNumber()
+    assert.equal(balance2, balance1 - 10, 'Tokens were not properly burned')
+  })
+
+  it('should not allow you to burn tokens you don\'t have', async () => {
+    account_two = accounts[1]
+    amount = 200
+    await utils.assertRevert(cbc.burnTokens(amount, {from: account_two}))
+  })
+
+  it('should not be possible to transfer more tokens than than you have', async () => {
+    account_two = accounts[1]
+    account_three = accounts[2]
+    amount = 200
+
+    await utils.assertRevert(cbc.transfer(account_three, amount, {from: account_two}))
+  })
+
+  it('should not allow non-owner to set employee', async () => {
+    account_two = accounts[1]
+    account_three = accounts[2]
+    await utils.assertRevert(cbc.setEmployee(account_two, web3.fromAscii('CashBet', 32), {from: account_three}))
   })
 
 })

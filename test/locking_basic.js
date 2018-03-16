@@ -1,3 +1,5 @@
+// Copyright (c) 2018 CashBet Alderney Limited. All rights reserved.
+
 const expect = require('chai').expect
 const CBC = artifacts.require("CashBetCoin")
 const utils = require('./utils')
@@ -31,7 +33,7 @@ contract('CashBetCoin', (accounts) => {
         owner = accounts[0]
         empl = accounts[1]
         user = accounts.slice(2)
-        rv = await deployed.setEmployee(empl, true)
+        rv = await deployed.setEmployee(empl, web3.fromAscii('CashBet', 32))
         expect(rv.receipt.status).to.equal('0x01')
 
         rv = await deployed.transfer(user[0],

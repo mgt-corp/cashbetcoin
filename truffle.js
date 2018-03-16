@@ -18,7 +18,7 @@ module.exports = {
             provider: function() {
                 return new HDWalletProvider(
                     process.env.MNEMONIC,
-                  	"https://ropsten.infura.io/ZXTVANDqZynratbjw5Ao"
+                    process.env.INFURA
                 );
             },
             gas: 4700000,

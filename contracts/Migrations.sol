@@ -1,3 +1,5 @@
+// Copyright (c) 2018 CashBet Alderney Limited. All rights reserved.
+
 pragma solidity ^0.4.17;
 
 contract Migrations {
