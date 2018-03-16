@@ -1,3 +1,6 @@
 /.env
+/.git.SIDE
+/TODO.md
+/misc
 build
 node_modules
