@@ -25,3 +25,9 @@ Run the unit tests:
 Minimize the ABI JSON w/ minjson
 
     minjson
+
+TODO:
+
+Coalesce the multi-associate-player versions:
+* playerid.js
+* migrate.js

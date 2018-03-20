@@ -6,6 +6,8 @@ const utils = require('./utils')
 
 const TOTAL_SUPPLY = utils.tokenAmtStr(430e6)
 
+const NULLBYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
+
 let deployed = null
 let accounts = null
 let owner = null
@@ -31,7 +33,13 @@ contract('Locking Limits', (accounts) => {
         owner = accounts[0]
         empl = accounts[1]
         user = accounts.slice(2)
-        rv = await deployed.setEmployee(empl, web3.fromAscii('CashBet', 32))
+        
+        // empl is employee of CashBet
+        rv = await deployed.setEmployee(empl, web3.fromAscii('CashBet', 32), true)
+        expect(rv.receipt.status).to.equal('0x01')
+
+        // empl is employee for unassociated players
+        rv = await deployed.setEmployee(empl, NULLBYTES32, true)
         expect(rv.receipt.status).to.equal('0x01')
 
         // 5000 -> user[0]
@@ -79,7 +87,7 @@ contract('Locking Limits', (accounts) => {
                                              exp,
                                              {from: user[0]})
         evt = rv.logs[0]
-        expect(evt.event).to.equal("LockIncreased")
+        expect(evt.event).to.equal("LockIncrease")
         expect(evt.args.user).to.equal(user[0])
         expect(evt.args.amount.c[0]).to.equal(utils.tokenAmtInt(amt))
         expect(evt.args.time.c[0]).to.equal(exp)
@@ -143,7 +151,7 @@ contract('Locking Limits', (accounts) => {
                                          exp,
                                          {from: user[0]})
         evt = rv.logs[0]
-        expect(evt.event).to.equal("LockIncreased")
+        expect(evt.event).to.equal("LockIncrease")
         expect(evt.args.user).to.equal(user[0])
         expect(evt.args.amount.c[0]).to.equal(100000000001)
         expect(evt.args.time.c[0]).to.equal(exp)
@@ -170,7 +178,7 @@ contract('Locking Limits', (accounts) => {
                                          exp,
                                          {from: user[0]})
         evt = rv.logs[0]
-        expect(evt.event).to.equal("LockIncreased")
+        expect(evt.event).to.equal("LockIncrease")
         expect(evt.args.user).to.equal(user[0])
         expect(evt.args.amount.c[0]).to.equal(100000000001)
         expect(evt.args.time.c[0]).to.equal(exp)
@@ -194,7 +202,7 @@ contract('Locking Limits', (accounts) => {
                                          exp,
                                          {from: user[0]})
         evt = rv.logs[0]
-        expect(evt.event).to.equal("LockIncreased")
+        expect(evt.event).to.equal("LockIncrease")
         expect(evt.args.user).to.equal(user[0])
         expect(evt.args.amount.c[0]).to.equal(utils.tokenAmtInt(amt))
         expect(evt.args.time.c[0]).to.equal(exp)
@@ -210,7 +218,7 @@ contract('Locking Limits', (accounts) => {
         expect(rv.c[0]).to.equal(exp)
     })
 
-    it('expired locks can\'t be decreased', async () => {
+    it('expired locks can\'t be decrease', async () => {
         amt = 0
         exp = utils.now()
         await utils.assertRevert(deployed.decreaseLock(utils.tokenAmtStr(amt),
@@ -227,7 +235,7 @@ contract('Locking Limits', (accounts) => {
                                          exp,
                                          {from: user[1]})
         evt = rv.logs[0]
-        expect(evt.event).to.equal("LockIncreased")
+        expect(evt.event).to.equal("LockIncrease")
         expect(evt.args.user).to.equal(user[1])
         expect(evt.args.amount.c[0]).to.equal(utils.tokenAmtInt(amt))
         expect(evt.args.time.c[0]).to.equal(exp)
@@ -292,7 +300,7 @@ contract('Locking Limits', (accounts) => {
                                          user[1],
                                          {from: empl})
         evt = rv.logs[0]
-        expect(evt.event).to.equal("LockDecreased")
+        expect(evt.event).to.equal("LockDecrease")
         expect(evt.args.user).to.equal(user[1])
         expect(evt.args.employee).to.equal(empl)
         expect(evt.args.amount.c[0]).to.equal(utils.tokenAmtInt(amt))
@@ -310,7 +318,7 @@ contract('Locking Limits', (accounts) => {
                                          user[1],
                                          {from: empl})
         evt = rv.logs[0]
-        expect(evt.event).to.equal("LockDecreased")
+        expect(evt.event).to.equal("LockDecrease")
         expect(evt.args.user).to.equal(user[1])
         expect(evt.args.employee).to.equal(empl)
         expect(evt.args.amount.c[0]).to.equal(99999999999)
@@ -328,7 +336,7 @@ contract('Locking Limits', (accounts) => {
                                          user[1],
                                          {from: empl})
         evt = rv.logs[0]
-        expect(evt.event).to.equal("LockDecreased")
+        expect(evt.event).to.equal("LockDecrease")
         expect(evt.args.user).to.equal(user[1])
         expect(evt.args.employee).to.equal(empl)
         expect(evt.args.amount.c[0]).to.equal(utils.tokenAmtInt(amt))
@@ -353,7 +361,7 @@ contract('Locking Limits', (accounts) => {
                                          exp,
                                          {from: user[2]})
         evt = rv.logs[0]
-        expect(evt.event).to.equal("LockIncreased")
+        expect(evt.event).to.equal("LockIncrease")
         expect(evt.args.user).to.equal(user[2])
         expect(evt.args.amount.c[0]).to.equal(utils.tokenAmtInt(amt))
         expect(evt.args.time.c[0]).to.equal(exp)
@@ -368,7 +376,7 @@ contract('Locking Limits', (accounts) => {
                                          user[2],
                                          {from: empl})
         evt = rv.logs[0]
-        expect(evt.event).to.equal("LockDecreased")
+        expect(evt.event).to.equal("LockDecrease")
         expect(evt.args.user).to.equal(user[2])
         expect(evt.args.employee).to.equal(empl)
         expect(evt.args.amount.c[0]).to.equal(utils.tokenAmtInt(amt))

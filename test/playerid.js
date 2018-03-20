@@ -39,13 +39,26 @@ contract('Associate', (accounts) => {
         owner = accounts[0]
         empl = accounts[1]
         user = accounts.slice(2)
-        rv = await cbc1.setEmployee(empl, web3.fromAscii('CashBet', 32))
+        
+        // empl is employee of CashBet
+        rv = await cbc1.setEmployee(empl, web3.fromAscii('CashBet', 32), true)
         expect(rv.receipt.status).to.equal('0x01')
         ndx = 0
         evt = rv.logs[ndx++]
         expect(evt.event).to.equal("Employee")
         expect(evt.args.empl).to.equal(empl)
         expect(trimNull(web3.toAscii(evt.args.operatorId))).to.equal('CashBet')
+        expect(evt.args.allowed).to.equal(true)
+
+        // empl is employee for unassociated players
+        rv = await cbc1.setEmployee(empl, NULLBYTES32, true)
+        expect(rv.receipt.status).to.equal('0x01')
+        ndx = 0
+        evt = rv.logs[ndx++]
+        expect(evt.event).to.equal("Employee")
+        expect(evt.args.empl).to.equal(empl)
+        expect(evt.args.operatorId.valueOf()).to.equal(NULLBYTES32)
+        expect(evt.args.allowed).to.equal(true)
 
         // Set approved operators
         rv = await cbc1.setOperator(web3.fromAscii('CashBet', 32), true,
@@ -165,7 +178,7 @@ contract('Associate', (accounts) => {
                                      {from: user[0]})
         expect(rv.receipt.status).to.equal('0x01')
         evt = rv.logs[0]
-        expect(evt.event).to.equal("LockIncreased")
+        expect(evt.event).to.equal("LockIncrease")
         expect(evt.args.user).to.equal(user[0])
         expect(evt.args.amount.c[0]).to.equal(utils.tokenAmtInt(amt))
         expect(evt.args.time.c[0]).to.equal(exp)
@@ -291,7 +304,7 @@ contract('Associate', (accounts) => {
         expect(evt.args.owner).to.equal(user[0])
         expect(evt.args.value.c[0]).to.equal(utils.tokenAmtInt(5000))
         evt = rv.logs[ndx++]
-        expect(evt.event).to.equal("LockIncreased")
+        expect(evt.event).to.equal("LockIncrease")
         expect(evt.args.user).to.equal(user[0])
         expect(evt.args.amount.c[0]).to.equal(utils.tokenAmtInt(1000))
         expect(evt.args.time.c[0]).to.equal(exp)
@@ -545,6 +558,11 @@ contract('Associate', (accounts) => {
     it('employee can initially setAssociation for unapproved operator', async () => {
         opid = 'BadBad'
         id = '4446'
+
+        // Employee needs to be set for unapproved operator
+        rv = await cbc1.setEmployee(empl, web3.fromAscii(opid, 32), true)
+        expect(rv.receipt.status).to.equal('0x01')
+
         rv = await cbc1.setAssociation(user[5],
                                        web3.fromAscii(opid, 32),
                                        web3.fromAscii(id, 32),
@@ -559,25 +577,6 @@ contract('Associate', (accounts) => {
         expect(trimNull(web3.toAscii(evt.args.playerId))).to.equal(id)
     })
     
-    it('employee can\'t subsequently setAssociation with unapproved operator', async () => {
-        opid = 'BadBad'
-        id = '4447'
-        await utils.assertRevert(cbc1.setAssociation(user[5],
-                                                     web3.fromAscii(opid, 32),
-                                                     web3.fromAscii(id, 32),
-       												 {from: empl}))
-    })
-
-    it('employee can be reassigned to unapproved operator', async () => {
-        rv = await cbc1.setEmployee(empl, web3.fromAscii(opid, 32))
-        expect(rv.receipt.status).to.equal('0x01')
-        ndx = 0
-        evt = rv.logs[ndx++]
-        expect(evt.event).to.equal("Employee")
-        expect(evt.args.empl).to.equal(empl)
-        expect(trimNull(web3.toAscii(evt.args.operatorId))).to.equal(opid)
-    })
-
     it('now employee can subsequently setAssociation for unapproved operator', async () => {
         opid = 'BadBad'
         id = '4448'

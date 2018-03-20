@@ -168,6 +168,11 @@ transfer the additional tokens to the new contract.
 5.5 The owner must use the setMigrateFrom function on the new contract
 to refer to the contract address of the old contract.
 
+5.5.1 The setMigrateFrom function may only be used once! After it has
+been called successfully it will not allow further calls. This
+prevents the owner from arbitrarily migrating extra balance from bogus
+contracts.
+
 5.6 The owner must use the setMigrateTo function on the old contract
 to refer to the the contract address of the new contract.
 
@@ -178,11 +183,19 @@ to refer to the the contract address of the new contract.
 approved operators.
 
 6.2 The owner may use the setEmployee function to add and remove
-employees.
+employees for approved operators.
 
-6.3 The setEmployee function specifies an operatorId for each
-employee.  Employees may alter accounts which are associated with
-their operator.
+6.3 The setEmployee function specifies the employee status for
+an employee address and an operatorId.  The employee may alter
+accounts which are associated with an allowed operator.
+
+6.3.1 The setEmployee function may be used to disallow a previously
+allowed epmployee for a specified operator by passing false for
+"allowed".
+
+6.3.2 The setEmployee function may be used to control whether an
+employee can modify "unassociated" players (not currently associated
+with an operator) by using 0 for the operatorId.
 
 6.4 The owner may use the setMigrateFrom function to specify the
 address of the pre-existing contract that users may optIn from.
@@ -202,8 +215,8 @@ different address.
 decrease the locked value or shorten the expiration time of a lock
 associated with that operator.
 
-7.2 Employees may use the decreaseLock function on all locks which are
-not associated with any operator (empty operatorId).
+7.2 Employees of operatorId 0 may use the decreaseLock function on all
+locks which are not associated with any operator (empty operatorId).
 
 7.3 Employees may use the setAssociation function to change the
 operatorId and playerId of any association which matches their
@@ -271,7 +284,7 @@ describe the agent and the state change.
 Transfer, Burn, OptIn or Vacate events to describe the change.
 
 11.1.2 Any function which changes the lock value or lock end time of
-an account must emit the LockIncreased and LockDecreased events to
+an account must emit the LockIncrease and LockDecrease events to
 describe the changed state of the lock.
 
 11.1.3 Any function which changes the operatorId or playerId values of
@@ -283,3 +296,10 @@ emit the Employee event to describe the new state.
 
 11.1.5 Any function that changes the approved operator set must emit
 the Operator event to describe the new state.
+
+
+12 Miscellaneous
+----------------------------------------------------------------
+
+12.1 The payable fallback function issues a revert so ETH may not be
+sent to the address of the contract.

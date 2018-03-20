@@ -139,7 +139,7 @@ contract('ERC20 Functions', function(accounts) {
   it('should not allow non-owner to set employee', async () => {
     account_two = accounts[1]
     account_three = accounts[2]
-    await utils.assertRevert(cbc.setEmployee(account_two, web3.fromAscii('CashBet', 32), {from: account_three}))
+      await utils.assertRevert(cbc.setEmployee(account_two, web3.fromAscii('CashBet', 32), true, {from: account_three}))
   })
 
 })

@@ -6,6 +6,8 @@ const utils = require('./utils')
 
 const TOTAL_SUPPLY = utils.tokenAmtStr(430e6)
 
+const NULLBYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
+
 let deployed = null
 let accounts = null
 let owner = null
@@ -31,7 +33,13 @@ contract('Approve/TransferFrom Fix', (accounts) => {
         owner = accounts[0]
         empl = accounts[1]
         user = accounts.slice(2)
-        rv = await deployed.setEmployee(empl, web3.fromAscii('CashBet', 32))
+        
+        // empl is employee of CashBet
+        rv = await deployed.setEmployee(empl, web3.fromAscii('CashBet', 32), true)
+        expect(rv.receipt.status).to.equal('0x01')
+
+        // empl is employee for unassociated players
+        rv = await deployed.setEmployee(empl, NULLBYTES32, true)
         expect(rv.receipt.status).to.equal('0x01')
 
         // 5000 -> user[0]

@@ -22,6 +22,7 @@ module.exports = {
                 );
             },
             gas: 4700000,
+            gasPrice: 5000000000, // 5 gWei
             network_id: 1
         }
     }

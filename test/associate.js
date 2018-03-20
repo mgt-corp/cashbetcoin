@@ -39,13 +39,26 @@ contract('Associate2', (accounts) => {
         owner = accounts[0]
         empl = accounts[1]
         user = accounts.slice(2)
-        rv = await cbc1.setEmployee(empl, web3.fromAscii('CashBet', 32))
+
+        // empl is employee of CashBet
+        rv = await cbc1.setEmployee(empl, web3.fromAscii('CashBet', 32), true)
         expect(rv.receipt.status).to.equal('0x01')
         ndx = 0
         evt = rv.logs[ndx++]
         expect(evt.event).to.equal("Employee")
         expect(evt.args.empl).to.equal(empl)
         expect(trimNull(web3.toAscii(evt.args.operatorId))).to.equal('CashBet')
+        expect(evt.args.allowed).to.equal(true)
+        
+        // empl is employee for unassociated players
+        rv = await cbc1.setEmployee(empl, NULLBYTES32, true)
+        expect(rv.receipt.status).to.equal('0x01')
+        ndx = 0
+        evt = rv.logs[ndx++]
+        expect(evt.event).to.equal("Employee")
+        expect(evt.args.empl).to.equal(empl)
+        expect(evt.args.operatorId).to.equal(NULLBYTES32)
+        expect(evt.args.allowed).to.equal(true)
 
         // Set approved operators
         rv = await cbc1.setOperator(web3.fromAscii('CashBet', 32), true,

@@ -7,6 +7,8 @@ const utils = require('./utils')
 
 const TOTAL_SUPPLY = utils.tokenAmtStr(430e6)
 
+const NULLBYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
+
 let cbc1 = null
 let cbc2 = null
 let accounts = null
@@ -33,7 +35,13 @@ contract('Migration', (accounts) => {
         owner = accounts[0]
         empl = accounts[1]
         user = accounts.slice(2)
-        rv = await cbc1.setEmployee(empl, web3.fromAscii('CashBet', 32))
+        
+        // empl is employee of CashBet
+        rv = await cbc1.setEmployee(empl, web3.fromAscii('CashBet', 32), true)
+        expect(rv.receipt.status).to.equal('0x01')
+
+        // empl is employee for unassociated players
+        rv = await cbc1.setEmployee(empl, NULLBYTES32, true)
         expect(rv.receipt.status).to.equal('0x01')
 
         // 5000 -> user[0]
@@ -85,6 +93,11 @@ contract('Migration', (accounts) => {
     it('can set migrateFrom', async () => {
         rv = await cbc2.setMigrateFrom(cbc1.address, {from: owner})
         expect(rv.receipt.status).to.equal('0x01')
+    })
+    
+    it('can\'t set migrateFrom again', async () => {
+        await utils.assertRevert(cbc2.setMigrateFrom(cbc1.address,
+                                                     {from: owner}))
     })
     
     it('can\'t call optIn until migrateTo is set', async () => {
@@ -177,7 +190,7 @@ contract('Migration', (accounts) => {
         expect(evt.args.owner).to.equal(user[0])
         expect(evt.args.value.c[0]).to.equal(utils.tokenAmtInt(5000))
         evt = rv.logs[ndx++]
-        expect(evt.event).to.equal("LockIncreased")
+        expect(evt.event).to.equal("LockIncrease")
         expect(evt.args.user).to.equal(user[0])
         expect(evt.args.amount.c[0]).to.equal(utils.tokenAmtInt(2000))
         expect(evt.args.time.c[0]).to.equal(exp)

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity 0.4.19;
 
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
@@ -25,14 +25,14 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
   uint8 public constant decimals = 8;
   uint internal totalSupply_;
 
-  address owner;
+  address public owner;
 
-  mapping(bytes32 => bool) operators;
-  mapping(address => User) users;
-  mapping(address => bytes32) employees;
-
-  MigrationSource migrateFrom;
-  address migrateTo;
+  mapping(bytes32 => bool) public operators;
+  mapping(address => User) public users;
+  mapping(address => mapping(bytes32 => bool)) public employees;
+  
+  MigrationSource public migrateFrom;
+  address public migrateTo;
 
   struct User {
     uint256 balance;
@@ -49,11 +49,31 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
     _;
   }
 
+  modifier only_employees(address _user){
+    require(employees[msg.sender][users[_user].operatorId]);
+    _;
+  }
+
+  // PlayerId may only be set if operatorId is set too.
+  modifier playerid_iff_operatorid(bytes32 _opId, bytes32 _playerId){
+    require(_opId != bytes32(0) || _playerId == bytes32(0));
+    _;
+  }
+
+  // Value argument must be less than unlocked balance.
+  modifier value_less_than_unlocked_balance(address _user, uint256 _value){
+    User storage user = users[_user];
+    require(user.lock_endTime < block.timestamp ||
+            _value <= user.balance - user.lock_value);
+    require(_value <= user.balance);
+    _;
+  }
+
   event Approval(address indexed owner, address indexed spender, uint256 value);
   event Transfer(address indexed from, address indexed to, uint256 value);
 
-  event LockIncreased(address indexed user, uint256 amount, uint256 time);
-  event LockDecreased(address indexed user, address employee,  uint256 amount, uint256 time);
+  event LockIncrease(address indexed user, uint256 amount, uint256 time);
+  event LockDecrease(address indexed user, address employee,  uint256 amount, uint256 time);
 
   event Associate(address indexed user, address agent, bytes32 indexed operatorId, bytes32 playerId);
   
@@ -62,7 +82,7 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
   event OptIn(address indexed owner, uint256 value);
   event Vacate(address indexed owner, uint256 value);
 
-  event Employee(address indexed empl, bytes32 operatorId);
+  event Employee(address indexed empl, bytes32 indexed operatorId, bool allowed);
   event Operator(bytes32 indexed operatorId, bool allowed);
 
   function CashBetCoin2(uint _totalSupply) public {
@@ -85,29 +105,19 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
     return users[_addr].balance;
   }
 
-  function transfer(address _to, uint256 _value) public returns (bool success){
+  function transfer(address _to, uint256 _value) public value_less_than_unlocked_balance(msg.sender, _value) returns (bool success) {
     User storage user = users[msg.sender];
-    require(user.lock_endTime < block.timestamp ||
-            _value <= user.balance - user.lock_value);
-    require(_value <= user.balance);
-
     user.balance = user.balance.sub(_value);
     users[_to].balance = users[_to].balance.add(_value);
     Transfer(msg.sender, _to, _value);
     return true;
   }
 
-  function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
+  function transferFrom(address _from, address _to, uint256 _value) public value_less_than_unlocked_balance(_from, _value) returns (bool success) {
     User storage user = users[_from];
-    require(user.lock_endTime < block.timestamp ||
-            _value <= user.balance - user.lock_value);
-    require(_value <= user.balance);
-    require(_value <= user.authorized[msg.sender]);
-
     user.balance = user.balance.sub(_value);
     users[_to].balance = users[_to].balance.add(_value);
     user.authorized[msg.sender] = user.authorized[msg.sender].sub(_value);
-
     Transfer(_from, _to, _value);
     return true;
   }
@@ -171,7 +181,7 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
 
     user.lock_value = _value;
     user.lock_endTime = _time;
-    LockIncreased(msg.sender, _value, _time);
+    LockIncrease(msg.sender, _value, _time);
     return true;
   }
 
@@ -179,18 +189,9 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
   // decrease the locked token expiration date.  These values may not
   // ever be increased by an employee.
   //
-  function decreaseLock(uint256 _value, uint256 _time, address _user) public returns (bool success) {
+  function decreaseLock(uint256 _value, uint256 _time, address _user) public only_employees(_user) returns (bool success) {
     User storage user = users[_user];
-    
-    // Only qualified employees allowed.
-    if (user.operatorId == bytes32(0)) {
-      // Unassociated players may be managed by any employee.
-      require(employees[msg.sender] != bytes32(0));
-    } else {
-      // Associated players may only be managed by operator's employees.
-      require(employees[msg.sender] == user.operatorId);
-    }
-    
+
     // We don't modify expired locks (they are already 0)
     require(user.lock_endTime > block.timestamp);
     // Ensure nothing gets bigger.
@@ -201,11 +202,11 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
 
     user.lock_value = _value;
     user.lock_endTime = _time;
-    LockDecreased(_user, msg.sender, _value, _time);
+    LockDecrease(_user, msg.sender, _value, _time);
     return true;
   }
 
-  function associate(bytes32 _opId, bytes32 _playerId) public returns (bool success) {
+  function associate(bytes32 _opId, bytes32 _playerId) public playerid_iff_operatorid(_opId, _playerId) returns (bool success) {
     User storage user = users[msg.sender];
 
     // Players can associate their playerId once while the token is
@@ -218,9 +219,6 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
     // OperatorId argument must be empty or in the approved operators set.
     require(_opId == bytes32(0) || operators[_opId]);
 
-    // Never allowed to set playerId to something and operatorId empty.
-    require(_opId != bytes32(0) || _playerId == bytes32(0));
-    
     user.operatorId = _opId;
     user.playerId = _playerId;
     Associate(msg.sender, msg.sender, _opId, _playerId);
@@ -231,20 +229,12 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
     return (users[_addr].operatorId, users[_addr].playerId);
   }
 
-  function setAssociation(address _user, bytes32 _opId, bytes32 _playerId) public returns (bool success) {
+  function setAssociation(address _user, bytes32 _opId, bytes32 _playerId) public only_employees(_user) playerid_iff_operatorid(_opId, _playerId) returns (bool success) {
     User storage user = users[_user];
 
-    // Only qualified employees allowed.
-    if (user.operatorId == bytes32(0)) {
-      // Unassociated players may be managed by any employee.
-      require(employees[msg.sender] != bytes32(0));
-    } else {
-      // Associated players may only be managed by operator's employees.
-      require(employees[msg.sender] == user.operatorId);
-    }
-    
-    // Never allowed to set playerId to something and operatorId empty.
-    require(_opId != bytes32(0) || _playerId == bytes32(0));
+    // Employees may only set opId to empty or something they are an
+    // employee of.
+    require(_opId == bytes32(0) || employees[msg.sender][_opId]);
     
     user.operatorId = _opId;
     user.playerId = _playerId;
@@ -252,9 +242,9 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
     return true;
   }
   
-  function setEmployee(address _addr, bytes32 _opId) public only_owner {
-    employees[_addr] = _opId;
-    Employee(_addr, _opId);
+  function setEmployee(address _addr, bytes32 _opId, bool _allowed) public only_owner {
+    employees[_addr][_opId] = _allowed;
+    Employee(_addr, _opId, _allowed);
   }
 
   function setOperator(bytes32 _opId, bool _allowed) public only_owner {
@@ -266,12 +256,8 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
     owner = _addr;
   }
 
-  function burnTokens(uint256 _value) public returns (bool success) {
+  function burnTokens(uint256 _value) public value_less_than_unlocked_balance(msg.sender, _value) returns (bool success) {
     User storage user = users[msg.sender];
-    require(user.lock_endTime < block.timestamp ||
-            _value <= user.balance - user.lock_value);
-    require(_value <= user.balance);
-
     user.balance = user.balance.sub(_value);
     totalSupply_ = totalSupply_.sub(_value);
     Burn(msg.sender, _value);
@@ -282,6 +268,7 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
   // from when the optIn() interface is used.
   //
   function setMigrateFrom(address _addr) public only_owner {
+    require(migrateFrom == MigrationSource(0));
     migrateFrom = MigrationSource(_addr);
   }
 
@@ -327,7 +314,7 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
       lockTimeIncreased = true;
     }
     if (lock_value > 0 || lockTimeIncreased) {
-      LockIncreased(msg.sender, user.lock_value, user.lock_endTime);
+      LockIncrease(msg.sender, user.lock_value, user.lock_endTime);
     }
 
     if (user.operatorId == bytes32(0) && opId != bytes32(0)) {
@@ -369,5 +356,10 @@ contract CashBetCoin2 is MigrationSource, ERC20 {
     user.playerId = bytes32(0);
 
     Vacate(_addr, o_balance);
+  }
+
+  // Don't accept ETH.
+  function () public payable {
+    revert();
   }
 }
